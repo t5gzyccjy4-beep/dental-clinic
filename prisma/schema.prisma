@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("doctor")
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Patient {
+  id             Int              @id @default(autoincrement())
+  name           String
+  gender         String           @default("男")
+  birthday       String?
+  phone          String?
+  wechat         String?
+  address        String?
+  allergies      String?
+  medicalHistory String?          @map("medical_history")
+  notes          String?
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  appointments   Appointment[]
+  medicalRecords MedicalRecord[]
+  toothRecords   ToothRecord[]
+  treatments     Treatment[]
+  bills          Bill[]
+  images         Image[]
+  reminders      Reminder[]
+
+  @@map("patients")
+}
+
+model Appointment {
+  id        Int        @id @default(autoincrement())
+  patientId Int        @map("patient_id")
+  date      String
+  time      String
+  doctor    String?
+  type      String     @default("初诊")
+  status    String     @default("已预约")
+  notes     String?
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  patient   Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  reminders Reminder[]
+
+  @@map("appointments")
+}
+
+model MedicalRecord {
+  id             Int      @id @default(autoincrement())
+  patientId      Int      @map("patient_id")
+  appointmentId  Int?     @map("appointment_id")
+  chiefComplaint String?  @map("chief_complaint")
+  presentIllness String?  @map("present_illness")
+  pastHistory    String?  @map("past_history")
+  examination    String?
+  diagnosis      String?
+  treatmentPlan  String?  @map("treatment_plan")
+  doctorNotes    String?  @map("doctor_notes")
+  type           String   @default("初诊")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("medical_records")
+}
+
+model ToothRecord {
+  id          Int      @id @default(autoincrement())
+  patientId   Int      @map("patient_id")
+  recordId    Int?     @map("record_id")
+  toothNumber String   @map("tooth_number")
+  status      String   @default("正常")
+  note        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, toothNumber])
+  @@map("tooth_records")
+}
+
+model TreatmentItem {
+  id           Int      @id @default(autoincrement())
+  name         String
+  category     String   @default("口腔内科")
+  defaultPrice Float    @default(0) @map("default_price")
+  unit         String   @default("颗")
+  description  String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("treatment_items")
+}
+
+model Treatment {
+  id        Int      @id @default(autoincrement())
+  patientId Int      @map("patient_id")
+  recordId  Int?     @map("record_id")
+  items     String   @default("[]")
+  status    String   @default("进行中")
+  startDate String   @map("start_date")
+  endDate   String?  @map("end_date")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bills     Bill[]
+
+  @@map("treatments")
+}
+
+model Bill {
+  id          Int       @id @default(autoincrement())
+  patientId   Int       @map("patient_id")
+  treatmentId Int?      @map("treatment_id")
+  totalAmount Float     @default(0) @map("total_amount")
+  paidAmount  Float     @default(0) @map("paid_amount")
+  balance     Float     @default(0)
+  status      String    @default("未结清")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  treatment   Treatment? @relation(fields: [treatmentId], references: [id], onDelete: SetNull)
+  payments    Payment[]
+
+  @@map("bills")
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  billId    Int      @map("bill_id")
+  amount    Float
+  method    String   @default("现金")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  bill      Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Image {
+  id          Int      @id @default(autoincrement())
+  patientId   Int      @map("patient_id")
+  recordId    Int?     @map("record_id")
+  filePath    String   @map("file_path")
+  type        String   @default("口内照")
+  note        String?
+  toothNumber String?  @map("tooth_number")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("images")
+}
+
+model Reminder {
+  id            Int          @id @default(autoincrement())
+  patientId     Int          @map("patient_id")
+  appointmentId Int?         @map("appointment_id")
+  type          String       @default("复诊")
+  remindDate    String       @map("remind_date")
+  status        String       @default("待提醒")
+  message       String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@map("reminders")
+}
+
+model Setting {
+  id                  Int      @id @default(autoincrement())
+  clinicName          String   @default("牙科门诊") @map("clinic_name")
+  address             String?
+  phone               String?
+  defaultReminderDays String   @default("[3,1,0]") @map("default_reminder_days")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
