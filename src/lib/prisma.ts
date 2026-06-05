@@ -1,16 +1,15 @@
 import { PrismaNeon } from '@prisma/adapter-neon'
+import { Pool } from '@neondatabase/serverless'
 import { PrismaClient } from '@/generated/prisma/client'
 
 const databaseUrl = process.env['DATABASE_URL']
 
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL 环境变量未设置。请在 .env 中配置数据库连接地址。')
+  throw new Error('DATABASE_URL 环境变量未设置。')
 }
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { neon } = require('@neondatabase/serverless')
-const sql = neon(databaseUrl)
-const adapter = new PrismaNeon(sql, {})
+const pool = new Pool({ connectionString: databaseUrl })
+const adapter = new PrismaNeon(pool)
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
