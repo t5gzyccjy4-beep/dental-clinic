@@ -7,7 +7,7 @@ if (!databaseUrl) {
   throw new Error('DATABASE_URL 环境变量未设置。')
 }
 
-const adapter = new PrismaNeon(databaseUrl)
+const adapter = new PrismaNeon({ connectionString: databaseUrl })
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
