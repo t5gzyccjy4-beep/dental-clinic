@@ -1,13 +1,18 @@
-import { PrismaNeon } from '@prisma/adapter-neon'
 import { PrismaClient } from '@/generated/prisma/client'
 
 const databaseUrl = process.env['DATABASE_URL']
 
-if (!databaseUrl) {
-  throw new Error('DATABASE_URL 环境变量未设置。')
-}
+let adapter: any
 
-const adapter = new PrismaNeon({ connectionString: databaseUrl })
+if (databaseUrl && databaseUrl.startsWith('postgres')) {
+  // Vercel / Neon 云数据库
+  const { PrismaNeon } = require('@prisma/adapter-neon') as typeof import('@prisma/adapter-neon')
+  adapter = new PrismaNeon({ connectionString: databaseUrl })
+} else {
+  // 本地 SQLite
+  const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3') as typeof import('@prisma/adapter-better-sqlite3')
+  adapter = new PrismaBetterSqlite3({ url: 'file:./prisma/dev.db' })
+}
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
